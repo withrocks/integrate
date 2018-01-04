@@ -118,9 +118,16 @@ class TestCase(object):
 
     def run(self):
         "Run the tests in this test case"
-        self.results = {}
-
         print("* Running test suite '{}'".format(self.__class__.__doc__))
+
+        try:
+            tests = self._gather_tests()
+            self._run_tests(tests)
+            return self._summary(tests)
+        finally:
+            self.teardown_all()
+
+    def _gather_tests(self):
         self.setup_all()
 
         # collect tests
@@ -133,8 +140,10 @@ class TestCase(object):
                 if len(_test_name(func)) > max_len:
                     max_len = len(_test_name(func))
         tests = self._solve_dependencies(tests)
+        return tests
 
-        # run tests
+    def _run_tests(self):
+        self.results = {}
         num_skipped = 0
         num_exfail = 0
         for name, func in tests:
@@ -194,7 +203,7 @@ class TestCase(object):
                     print("[ {} ]".format(verb))
                 sys.stdout.flush()
 
-        # log summary
+    def _summary(self, tests):
         num_errors = 0
         if self.verbosity > 1:
             for name, func in tests:
@@ -231,7 +240,6 @@ class TestCase(object):
                     continue
                 num_errors += 1
 
-        self.teardown_all()
         print("Ran {} tests, {} succeeded, {} failed ({} expected), {} skipped".format(
             len(tests),
             len(tests) - num_errors - num_skipped,
